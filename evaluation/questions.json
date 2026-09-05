@@ -1,0 +1,17 @@
+[
+  {"question": "गेहूं की खेती के लिए कौन सी मिट्टी उपयुक्त है?", "answer_present": true, "evidence_terms": ["गेहूं", "दोमट मिट्टी"]},
+  {"question": "धान की खेती के लिए कैसी जलवायु चाहिए?", "answer_present": true, "evidence_terms": ["धान", "आर्द्र जलवायु"]},
+  {"question": "सिंचाई का कृषि में क्या महत्व है?", "answer_present": true, "evidence_terms": ["सिंचाई", "फसल"]},
+  {"question": "उर्वरक का उपयोग किस आधार पर करना चाहिए?", "answer_present": true, "evidence_terms": ["उर्वरक", "मिट्टी परीक्षण"]},
+  {"question": "आधुनिक कृषि में ड्रोन का उपयोग क्यों किया जाता है?", "answer_present": true, "evidence_terms": ["ड्रोन", "सर्वेक्षण"]},
+  {"question": "What type of soil is suitable for wheat cultivation?", "answer_present": true, "evidence_terms": ["गेहूं", "दोमट मिट्टी"]},
+  {"question": "What climate is suitable for rice cultivation?", "answer_present": true, "evidence_terms": ["धान", "आर्द्र जलवायु"]},
+  {"question": "Why is irrigation important in agriculture?", "answer_present": true, "evidence_terms": ["सिंचाई", "पानी"]},
+  {"question": "How can modern technology help farmers?", "answer_present": true, "evidence_terms": ["ड्रोन", "सेंसर"]},
+  {"question": "What is the purpose of sustainable agriculture?", "answer_present": true, "evidence_terms": ["सतत कृषि", "प्राकृतिक संसाधनों"]},
+  {"question": "भारत में चाय का सबसे बड़ा उत्पादक राज्य कौन सा है?", "answer_present": false, "evidence_terms": []},
+  {"question": "What is the scientific name of wheat?", "answer_present": false, "evidence_terms": []},
+  {"question": "भारत का वर्तमान प्रधानमंत्री कौन है?", "answer_present": false, "evidence_terms": []},
+  {"question": "What is the price of wheat in today's market?", "answer_present": false, "evidence_terms": []},
+  {"question": "Which insecticide brand should a farmer buy?", "answer_present": false, "evidence_terms": []}
+]
