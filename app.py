@@ -1,16 +1,20 @@
 """Streamlit user interface for Hindi document QA."""
 
 import re
+import logging
 
 import streamlit as st
 
 from src.config import get_settings
 from src.embeddings import EmbeddingModel
 from src.errors import LLMError
+from src.indexing import ensure_index
 from src.llm import build_llm
 from src.rag_pipeline import RAGPipeline
 from src.retriever import Retriever
 from src.vector_store import ChromaVectorStore
+
+logger = logging.getLogger(__name__)
 
 SAMPLE_QUESTIONS = [
     ("Wheat soil", "गेहूं की खेती के लिए कौन सी मिट्टी उपयुक्त है?"),
@@ -40,11 +44,13 @@ def clean_visible_answer(answer: str) -> str:
 def build_store():
     settings = get_settings()
     embeddings = EmbeddingModel(settings.embedding_model)
-    return ChromaVectorStore(
+    store = ChromaVectorStore(
         settings.chroma_persist_directory,
         settings.chroma_collection_name,
         embeddings,
     )
+    ensure_index(settings, store)
+    return store
 
 
 @st.cache_resource
@@ -66,16 +72,16 @@ st.markdown(
     """
     <style>
     :root {
-        --ink: #17211b;
-        --muted: #6b756d;
-        --line: #dfe6df;
-        --paper: #f7f9f6;
-        --surface: #ffffff;
-        --accent: #286b4b;
-        --accent-dark: #1d5138;
-        --accent-soft: #e8f2eb;
+        --background: #F7F9F7;
+        --card: #FFFFFF;
+        --primary: #176B45;
+        --primary-hover: #125638;
+        --text: #17211B;
+        --secondary-text: #68736D;
+        --border: #DDE5DF;
+        --soft-green: #EAF5EF;
     }
-    .stApp { background: var(--paper); color: var(--ink); }
+    .stApp { background: var(--background); color: var(--text); }
     [data-testid="stHeader"] { background: transparent; height: 0; }
     [data-testid="stToolbar"] { display: none; }
     #MainMenu { visibility: hidden; }
@@ -86,17 +92,39 @@ st.markdown(
         padding-bottom: 2rem;
     }
     [data-testid="stSidebar"] {
-        border-right: 1px solid var(--line);
-        background: #f3f7f2;
+        border-right: 1px solid var(--border);
+        background: var(--background);
     }
     [data-testid="stSidebar"] .block-container { padding-top: 2rem; }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+        color: var(--text);
+    }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] strong,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h4,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h5,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h6 {
+        color: var(--text);
+    }
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {
+        color: var(--secondary-text);
+    }
+    [data-testid="stSidebar"] [data-testid="stTextInput"] input,
+    [data-testid="stSidebar"] [data-testid="stTextArea"] textarea,
+    [data-testid="stSidebar"] label {
+        color: var(--text);
+    }
     .topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
         padding-bottom: 1.1rem;
-        border-bottom: 1px solid var(--line);
+        border-bottom: 1px solid var(--border);
     }
     .brand { display: flex; align-items: center; gap: .8rem; }
     .brand-mark {
@@ -105,14 +133,14 @@ st.markdown(
         width: 2.35rem;
         height: 2.35rem;
         border-radius: 9px;
-        background: var(--accent);
-        color: white;
+        background: var(--primary);
+        color: var(--card);
         font-weight: 800;
         letter-spacing: -.04em;
     }
     .brand-name { font-size: 1.05rem; font-weight: 800; line-height: 1.1; }
     .brand-subtitle {
-        color: var(--muted); font-size: .78rem; margin-top: .18rem;
+        color: var(--secondary-text); font-size: .78rem; margin-top: .18rem;
     }
     .topbar-right {
         display: flex;
@@ -125,26 +153,27 @@ st.markdown(
         display: inline-flex;
         align-items: center;
         gap: .42rem;
-        color: var(--accent-dark);
+        color: var(--primary-hover);
         font-size: .78rem;
         font-weight: 700;
         margin-right: .35rem;
     }
     .online-dot {
-        width: .45rem; height: .45rem; border-radius: 50%; background: #36a269;
+        width: .45rem; height: .45rem; border-radius: 50%;
+        background: var(--primary);
     }
     .tech-badge {
-        border: 1px solid var(--line);
+        border: 1px solid var(--border);
         border-radius: 999px;
-        background: var(--surface);
-        color: #4e5b52;
+        background: var(--card);
+        color: var(--secondary-text);
         padding: .34rem .68rem;
         font-size: .72rem;
         font-weight: 700;
     }
     .hero { padding: 2.25rem 0 1.6rem; max-width: 760px; }
     .eyebrow {
-        color: var(--accent);
+        color: var(--primary);
         font-size: .7rem;
         font-weight: 800;
         letter-spacing: .14em;
@@ -152,72 +181,84 @@ st.markdown(
         margin-bottom: .85rem;
     }
     .hero h1 {
-        color: var(--ink);
+        color: var(--text);
         font-size: clamp(2rem, 3.5vw, 3rem);
         line-height: 1.08;
         letter-spacing: -.045em;
         margin: 0 0 .8rem;
     }
     .hero p {
-        color: var(--muted);
+        color: var(--secondary-text);
         font-size: 1.05rem;
         line-height: 1.6;
         margin: 0;
         max-width: 650px;
     }
     .section-label {
-        color: var(--ink); font-size: 1rem; font-weight: 750;
+        color: var(--text); font-size: 1rem; font-weight: 750;
         margin: .2rem 0 .7rem;
     }
     .input-shell {
-        background: var(--surface);
-        border: 1px solid var(--line);
+        background: var(--card);
+        border: 1px solid var(--border);
         border-radius: 14px;
         padding: 1rem;
         box-shadow: 0 8px 24px rgba(31, 55, 39, .05);
     }
-    .input-shell [data-testid="stTextArea"] textarea {
-        border-color: #ccd8cd;
+    [data-testid="stTextArea"] textarea {
+        background-color: #ffffff;
+        color: #17211b;
+        border: 1px solid #d8e2dc;
         border-radius: 10px;
-        background: #fbfdfb;
         min-height: 112px;
         font-size: 1rem;
+        caret-color: #17211b;
     }
-    .input-shell [data-testid="stTextArea"] textarea:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 1px var(--accent);
+    [data-testid="stTextArea"] textarea::placeholder {
+        color: #7a8580;
+        opacity: 1;
+    }
+    [data-testid="stTextArea"] textarea:focus {
+        border-color: #247a52;
+        box-shadow: 0 0 0 1px #247a52;
     }
     .sample-label {
-        color: var(--muted); font-size: .78rem; font-weight: 700;
+        color: var(--secondary-text); font-size: .78rem; font-weight: 700;
         margin: 1.35rem 0 .55rem;
     }
     .sample-row [data-testid="stButton"] button {
         min-height: 2.65rem;
-        border: 1px solid var(--line);
+        border: 1px solid var(--border);
         border-radius: 9px;
-        background: var(--surface);
-        color: #3d4a41;
+        background: var(--card);
+        color: var(--text);
         font-size: .78rem;
         line-height: 1.25;
         padding: .55rem .7rem;
         transition: border-color .15s ease, background .15s ease;
     }
     .sample-row [data-testid="stButton"] button:hover {
-        border-color: var(--accent);
-        background: var(--accent-soft);
-        color: var(--accent-dark);
+        border-color: var(--primary);
+        background: var(--soft-green);
+        color: var(--primary-hover);
     }
     .ask-button button,
     [data-testid="stBaseButton-primary"] {
         border-radius: 9px;
-        background: var(--accent);
-        border: 1px solid var(--accent);
+        background: var(--primary);
+        border: 1px solid var(--primary);
+        color: #ffffff;
         font-weight: 750;
         min-height: 2.8rem;
     }
     .ask-button button:hover,
     [data-testid="stBaseButton-primary"]:hover {
-        background: var(--accent-dark); border-color: var(--accent-dark);
+        background: var(--primary-hover); border-color: var(--primary-hover);
+        color: #ffffff;
+    }
+    [data-testid="stBaseButton-primary"] p,
+    [data-testid="stBaseButton-primary"] span {
+        color: #ffffff;
     }
     .answer-heading { margin-top: 2.4rem; }
     .answer-heading h2, .sources-heading h2 {
@@ -227,9 +268,9 @@ st.markdown(
     }
     .answer-heading h2 { margin: 0 0 .7rem; }
     .answer-box {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-left: 4px solid var(--accent);
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--primary);
         border-radius: 4px 12px 12px 4px;
         padding: 1.1rem 1.3rem;
         line-height: 1.7;
@@ -238,16 +279,28 @@ st.markdown(
     .sources-heading { margin-top: 2rem; }
     .sources-heading h2 { font-size: 1.08rem; margin: 0 0 .25rem; }
     .sources-heading p {
-        color: var(--muted); font-size: .82rem; margin: 0 0 .75rem;
+        color: var(--secondary-text); font-size: .82rem; margin: 0 0 .75rem;
     }
     [data-testid="stExpander"] {
-        border: 1px solid var(--line); border-radius: 9px;
-        background: var(--surface);
+        border: 1px solid var(--border); border-radius: 9px;
+        background: var(--card);
+    }
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary p,
+    [data-testid="stExpander"] [data-testid="stMarkdownContainer"],
+    [data-testid="stExpander"] [data-testid="stCaptionContainer"] {
+        color: var(--text);
+    }
+    [data-testid="stExpander"] [data-testid="stCaptionContainer"] p,
+    [data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {
+        color: var(--secondary-text);
     }
     [data-testid="stExpander"] summary p {
         font-size: .82rem; font-weight: 700;
     }
-    .footer { color: #849087; font-size: .72rem; padding-top: 1.5rem; }
+    .footer {
+        color: var(--secondary-text); font-size: .72rem; padding-top: 1.5rem;
+    }
     @media (max-width: 700px) {
         [data-testid="stMainBlockContainer"] { padding: 1rem 1rem 2rem; }
         .topbar { align-items: flex-start; flex-direction: column; }
@@ -367,6 +420,7 @@ if ask:
         with st.spinner("Searching the document and preparing your answer..."):
             try:
                 response = build_pipeline().ask(question.strip())
+                logger.info("Retrieved chunks: %d", len(response.sources))
             except LLMError:
                 st.error(
                     "Something went wrong while processing your question."

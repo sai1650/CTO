@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from .prompts import build_rag_prompt
+from .prompts import NO_ANSWER_MESSAGE, build_rag_prompt
 
 
 @dataclass
@@ -21,8 +21,7 @@ class RAGPipeline:
         contexts = self.retriever.retrieve(question)
         if not contexts:
             return RAGResponse(
-                "The provided document does not contain sufficient "
-                "information to answer this question.",
+                NO_ANSWER_MESSAGE,
                 [],
                 False,
             )

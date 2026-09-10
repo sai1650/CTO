@@ -15,6 +15,12 @@ class Retriever:
         """Return ranked context or an empty list when insufficient."""
         if not query.strip():
             return []
-        return self.vector_store.search(
+        candidates = self.vector_store.search(
             query, self.top_k, self.relevance_threshold
         )
+        return [
+            item
+            for item in candidates
+            if float(item.get("similarity", 0.0))
+            >= self.relevance_threshold
+        ]

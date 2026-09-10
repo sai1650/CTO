@@ -1,12 +1,16 @@
 """Grounded prompt construction."""
 
-SYSTEM_PROMPT = """You answer questions about a supplied Hindi agriculture
+NO_ANSWER_MESSAGE = (
+    "दिए गए दस्तावेज़ में इस प्रश्न का उत्तर देने के लिए पर्याप्त जानकारी "
+    "उपलब्ध नहीं है।"
+)
+
+SYSTEM_PROMPT = f"""You answer questions about a supplied Hindi agriculture
 document.
 Use only the supplied context. Never use outside knowledge or invent facts.
-If the answer is not supported by the context, say:
-The provided document does not contain sufficient information to answer this
-question.
-Always answer in concise English, even when the question or context is Hindi.
+If the answer is not supported by the context, respond exactly with:
+{NO_ANSWER_MESSAGE}
+Always answer in concise Hindi, even when the question is in English.
 Do not include chunk IDs or other internal references in the answer.
 """
 
@@ -18,7 +22,7 @@ def build_rag_prompt(question: str, contexts: list[dict]) -> str:
     )
     return (
         "Answer only from the context below. If it does not contain the "
-        "answer, use the required no-answer response.\n\n"
+        "answer, use the exact no-answer response.\n\n"
         f"Context:\n{context_text}\n\nQuestion: {question}\n"
-        "Answer in English:"
+        "Answer in Hindi:"
     )
