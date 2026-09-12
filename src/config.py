@@ -9,9 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OPENROUTER_FALLBACK_MODELS = (
-    "google/gemma-3-27b-it:free,"
-    "deepseek/deepseek-r1-0528:free,"
-    "meta-llama/llama-3.3-70b-instruct:free"
+    "google/gemma-4-31b-it:free,"
+    "google/gemma-4-26b-a4b-it:free,"
+    "liquid/lfm-2.5-2.6b:free"
 )
 load_dotenv(PROJECT_ROOT / ".env")
 

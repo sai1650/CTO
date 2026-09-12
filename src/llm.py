@@ -13,6 +13,7 @@ from .errors import (
     LLMProviderUnavailableError,
     UnsupportedLLMProviderError,
 )
+from .config import DEFAULT_OPENROUTER_FALLBACK_MODELS
 from .prompts import SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -177,7 +178,9 @@ class OpenRouterLLM(OpenAICompatibleLLM):
 
     def _request(self, messages: list[dict[str, str]]) -> Any:
         model_name = self.model
-        request_models = self._ordered_models()
+        # `model` is primary; `models` contains explicit alternatives only.
+        # Repeating openrouter/free here would recurse into the same router.
+        request_models = self.fallback_models
         logger.info(
             "OpenRouter request",
             extra={
@@ -340,13 +343,12 @@ def _parse_openrouter_fallbacks(
 ) -> list[str]:
     """Parse a comma-separated list of fallback free model IDs safely."""
     models: list[str] = []
-    if not raw_value:
-        return models
-    for item in raw_value.split(","):
+    configured_value = raw_value or DEFAULT_OPENROUTER_FALLBACK_MODELS
+    for item in configured_value.split(","):
         model = item.strip()
         if not model:
             continue
-        if primary_model and model == primary_model:
+        if primary_model and model.lower() == primary_model.strip().lower():
             continue
         if model not in models:
             models.append(model)

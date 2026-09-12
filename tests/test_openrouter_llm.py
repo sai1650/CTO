@@ -53,9 +53,46 @@ def test_openrouter_primary_model_success(monkeypatch):
     llm = build_llm(settings)
     result = llm.generate("भारत में खेती का महत्व क्या है?")
     assert "translated answer" in result
+    assert seen["kwargs"]["model"] == "google/gemma-4-31b-it:free"
     assert seen["kwargs"]["extra_body"]["models"] == [
-        "google/gemma-4-31b-it:free",
         "google/gemma-4-26b-a4b-it:free",
+    ]
+
+
+def test_openrouter_free_primary_uses_explicit_server_fallbacks(monkeypatch):
+    seen = {}
+
+    class FakeClient:
+        def chat(self):
+            return self
+
+        @property
+        def completions(self):
+            return self
+
+        def create(self, **kwargs):
+            seen["kwargs"] = kwargs
+            return _FakeResponse()
+
+    monkeypatch.setattr(
+        "src.llm.OpenAI",
+        lambda **kwargs: type(
+            "Client",
+            (),
+            {"chat": type("Chat", (), {"completions": FakeClient()})()},
+        )(),
+    )
+    settings = Settings(
+        LLM_PROVIDER="openrouter",
+        LLM_MODEL="openrouter/free",
+        OPENROUTER_API_KEY="test-key",
+        OPENROUTER_FALLBACK_MODELS=(
+            "openrouter/free,google/gemma-4-31b-it:free"
+        ),
+    )
+    build_llm(settings).generate("भारत में खेती का महत्व क्या है?")
+    assert seen["kwargs"]["extra_body"]["models"] == [
+        "google/gemma-4-31b-it:free"
     ]
 
 
