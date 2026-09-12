@@ -8,10 +8,9 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_OPENROUTER_MODEL = "google/gemma-4-31b-it:free"
 DEFAULT_OPENROUTER_FALLBACK_MODELS = (
-    "google/gemma-4-31b-it:free,"
-    "google/gemma-4-26b-a4b-it:free,"
-    "liquid/lfm-2.5-2.6b:free"
+    "google/gemma-4-26b-a4b-it:free"
 )
 load_dotenv(PROJECT_ROOT / ".env")
 
@@ -50,7 +49,7 @@ class Settings(BaseSettings):
     )
     llm_provider: str = Field(default="openrouter", alias="LLM_PROVIDER")
     llm_model: str | None = Field(
-        default="openrouter/free", alias="LLM_MODEL"
+        default=DEFAULT_OPENROUTER_MODEL, alias="LLM_MODEL"
     )
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_base_url: str | None = Field(default=None, alias="OPENAI_BASE_URL")

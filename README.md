@@ -33,7 +33,7 @@ Copy `.env.example` to `.env` and provide the API key locally:
 
 ```env
 LLM_PROVIDER=openrouter
-LLM_MODEL=openrouter/free
+LLM_MODEL=google/gemma-4-31b-it:free
 OPENROUTER_API_KEY=
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_FALLBACK_MODELS=

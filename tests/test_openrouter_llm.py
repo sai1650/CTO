@@ -55,6 +55,7 @@ def test_openrouter_primary_model_success(monkeypatch):
     assert "translated answer" in result
     assert seen["kwargs"]["model"] == "google/gemma-4-31b-it:free"
     assert seen["kwargs"]["extra_body"]["models"] == [
+        "google/gemma-4-31b-it:free",
         "google/gemma-4-26b-a4b-it:free",
     ]
 
@@ -84,15 +85,16 @@ def test_openrouter_free_primary_uses_explicit_server_fallbacks(monkeypatch):
     )
     settings = Settings(
         LLM_PROVIDER="openrouter",
-        LLM_MODEL="openrouter/free",
+        LLM_MODEL="google/gemma-4-31b-it:free",
         OPENROUTER_API_KEY="test-key",
         OPENROUTER_FALLBACK_MODELS=(
-            "openrouter/free,google/gemma-4-31b-it:free"
+            "google/gemma-4-31b-it:free,google/gemma-4-26b-a4b-it:free"
         ),
     )
     build_llm(settings).generate("भारत में खेती का महत्व क्या है?")
     assert seen["kwargs"]["extra_body"]["models"] == [
-        "google/gemma-4-31b-it:free"
+        "google/gemma-4-31b-it:free",
+        "google/gemma-4-26b-a4b-it:free",
     ]
 
 
@@ -149,7 +151,7 @@ def test_openrouter_empty_response_is_rejected(monkeypatch):
     monkeypatch.setattr("src.llm.OpenAI", lambda **kwargs: FakeClient())
     settings = Settings(
         LLM_PROVIDER="openrouter",
-        LLM_MODEL="openrouter/free",
+        LLM_MODEL="google/gemma-4-31b-it:free",
         OPENROUTER_API_KEY="test-key",
     )
     llm = build_llm(settings)

@@ -178,9 +178,7 @@ class OpenRouterLLM(OpenAICompatibleLLM):
 
     def _request(self, messages: list[dict[str, str]]) -> Any:
         model_name = self.model
-        # `model` is primary; `models` contains explicit alternatives only.
-        # Repeating openrouter/free here would recurse into the same router.
-        request_models = self.fallback_models
+        request_models = self._ordered_models()
         logger.info(
             "OpenRouter request",
             extra={
