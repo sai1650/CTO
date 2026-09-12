@@ -4,6 +4,7 @@ from pathlib import Path
 import logging
 from typing import Any
 
+from .config import resolve_project_path
 from .text_processor import Chunk
 
 logger = logging.getLogger(__name__)
@@ -19,9 +20,15 @@ class ChromaVectorStore:
         embedding_model,
     ) -> None:
         import chromadb
+
+        self.persist_directory = resolve_project_path(persist_directory)
         self.embedding_model = embedding_model
-        self.client = chromadb.PersistentClient(path=str(persist_directory))
+        self.client = chromadb.PersistentClient(
+            path=str(self.persist_directory)
+        )
         self.collection_name = collection_name
+        logger.info("ChromaDB path: %s", self.persist_directory)
+        logger.info("Chroma collection: %s", collection_name)
         self.collection = self.client.get_or_create_collection(
             name=collection_name,
             metadata={

@@ -11,6 +11,14 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(PROJECT_ROOT / ".env")
 
 
+def resolve_project_path(value: str | Path) -> Path:
+    """Resolve configured paths relative to this project's root."""
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    return path.resolve()
+
+
 class Settings(BaseSettings):
     """Runtime settings loaded from environment variables."""
 
@@ -56,9 +64,7 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Return one cached settings object for the process."""
     settings = Settings()
-    settings.chroma_persist_directory = Path(settings.chroma_persist_directory)
-    if not settings.chroma_persist_directory.is_absolute():
-        settings.chroma_persist_directory = (
-            PROJECT_ROOT / settings.chroma_persist_directory
-        )
+    settings.chroma_persist_directory = resolve_project_path(
+        settings.chroma_persist_directory
+    )
     return settings

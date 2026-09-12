@@ -331,6 +331,9 @@ store = load_store(
     settings.embedding_model,
 )
 document_count = store.count()
+logger.info("ChromaDB path: %s", store.persist_directory)
+logger.info("Chroma collection: %s", settings.chroma_collection_name)
+logger.info("Chroma document count: %d", document_count)
 index_ready = document_count > 0 and store.has_compatible_embedding_model()
 if index_ready:
     logger.info("Using existing index with %d chunks", document_count)
@@ -339,7 +342,10 @@ elif document_count:
         "ChromaDB index uses a different embedding model; run python ingest.py"
     )
 else:
-    logger.warning("ChromaDB index is empty; run python ingest.py")
+    logger.warning(
+        "ChromaDB index is empty at %s; run python ingest.py",
+        store.persist_directory,
+    )
 
 with st.sidebar:
     st.markdown("### About HindiRAG")

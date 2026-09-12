@@ -28,10 +28,10 @@ def main() -> None:
         embeddings,
     )
     logger.info("Embedding model: %s", embeddings.model_name)
-    logger.info("Chroma directory: %s", settings.chroma_persist_directory)
+    logger.info("ChromaDB path: %s", store.persist_directory)
     logger.info("Chroma collection: %s", settings.chroma_collection_name)
     document_count = ensure_index(settings, store, source_path)
-    logger.info("Chroma documents: %d", document_count)
+    logger.info("Chroma document count: %d", document_count)
     print(
         f"Ingestion completed: {sum(len(chunk.text) for chunk in chunks)} "
         f"document characters, "

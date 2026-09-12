@@ -1,4 +1,9 @@
-from src.config import Settings
+from src.config import PROJECT_ROOT, Settings, resolve_project_path
+
+
+def test_chroma_path_is_resolved_from_project_root():
+    expected_path = (PROJECT_ROOT / "chroma_db").resolve()
+    assert resolve_project_path("chroma_db") == expected_path
 
 
 def test_retrieval_and_chunk_defaults(monkeypatch):
