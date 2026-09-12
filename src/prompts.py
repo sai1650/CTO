@@ -10,7 +10,8 @@ document.
 Use only the supplied context. Never use outside knowledge or invent facts.
 If the answer is not supported by the context, respond exactly with:
 {NO_ANSWER_MESSAGE}
-Always answer in concise Hindi, even when the question is in English.
+Answer Hindi questions in concise English. Answer English questions in concise
+Hindi. For mixed Hindi-English questions, use concise English.
 Do not include chunk IDs or other internal references in the answer.
 """
 
@@ -24,5 +25,5 @@ def build_rag_prompt(question: str, contexts: list[dict]) -> str:
         "Answer only from the context below. If it does not contain the "
         "answer, use the exact no-answer response.\n\n"
         f"Context:\n{context_text}\n\nQuestion: {question}\n"
-        "Answer in Hindi:"
+        "Answer in the language required by the system instruction:"
     )

@@ -1,20 +1,20 @@
 """Streamlit user interface for Hindi document QA."""
 
-import re
 import logging
+import re
 
 import streamlit as st
 
 from src.config import get_settings
-from src.embeddings import EmbeddingModel
 from src.errors import LLMError
-from src.indexing import ensure_index
+from src.embeddings import EmbeddingModel
 from src.llm import build_llm
 from src.rag_pipeline import RAGPipeline
 from src.retriever import Retriever
 from src.vector_store import ChromaVectorStore
 
 logger = logging.getLogger(__name__)
+logger.info("Starting application...")
 
 SAMPLE_QUESTIONS = [
     ("Wheat soil", "गेहूं की खेती के लिए कौन सी मिट्टी उपयुक्त है?"),
@@ -41,22 +41,32 @@ def clean_visible_answer(answer: str) -> str:
 
 
 @st.cache_resource
-def build_store():
-    settings = get_settings()
-    embeddings = EmbeddingModel(settings.embedding_model)
+def load_embeddings(model_name: str) -> EmbeddingModel:
+    """Load one embedding adapter/model per Streamlit process."""
+    return EmbeddingModel(model_name)
+
+
+@st.cache_resource
+def load_store(
+    persist_directory: str, collection_name: str, model_name: str
+) -> ChromaVectorStore:
+    """Open one Chroma client per Streamlit process without ingesting."""
     store = ChromaVectorStore(
-        settings.chroma_persist_directory,
-        settings.chroma_collection_name,
-        embeddings,
+        persist_directory,
+        collection_name,
+        load_embeddings(model_name),
     )
-    ensure_index(settings, store)
     return store
 
 
 @st.cache_resource
 def build_pipeline():
     settings = get_settings()
-    store = build_store()
+    store = load_store(
+        str(settings.chroma_persist_directory),
+        settings.chroma_collection_name,
+        settings.embedding_model,
+    )
     retriever = Retriever(store, settings.top_k, settings.relevance_threshold)
     return RAGPipeline(retriever, build_llm(settings))
 
@@ -314,8 +324,22 @@ st.markdown(
 )
 
 settings = get_settings()
-store = build_store()
+logger.info("Checking ChromaDB index...")
+store = load_store(
+    str(settings.chroma_persist_directory),
+    settings.chroma_collection_name,
+    settings.embedding_model,
+)
 document_count = store.count()
+index_ready = document_count > 0 and store.has_compatible_embedding_model()
+if index_ready:
+    logger.info("Using existing index with %d chunks", document_count)
+elif document_count:
+    logger.warning(
+        "ChromaDB index uses a different embedding model; run python ingest.py"
+    )
+else:
+    logger.warning("ChromaDB index is empty; run python ingest.py")
 
 with st.sidebar:
     st.markdown("### About HindiRAG")
@@ -412,7 +436,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 if ask:
     if not question.strip():
         st.info("Enter a question to search the document.")
-    elif document_count == 0:
+    elif not index_ready:
         st.info(
             "No indexed document is available. Run `python ingest.py` first."
         )

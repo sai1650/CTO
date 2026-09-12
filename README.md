@@ -13,9 +13,9 @@ Unsupported questions are refused when no context passes retrieval. The prompt a
 ```mermaid
 flowchart LR
     A[Hindi UTF-8 document] --> B[Normalize and chunk]
-    B --> C[BGE-M3 embeddings]
+    B --> C[BAAI/bge-m3 embeddings]
     C --> D[(ChromaDB hindi_document)]
-    Q[Hindi or English query] --> E[BGE-M3 query embedding]
+    Q[Hindi or English query] --> E[Multilingual MiniLM query embedding]
     E --> D
     D --> F[Cosine distance threshold]
     F --> G[Grounded prompt]
@@ -54,7 +54,7 @@ CHUNK_OVERLAP=60
 python ingest.py
 ```
 
-Ingestion validates that the source exists, is non-empty UTF-8, and contains the expected agriculture vocabulary. It preserves Devanagari, creates sentence-preserving overlapping chunks, embeds with BGE-M3, rebuilds the `hindi_document` collection under `chroma_db`, and verifies the final count. The chunk count is calculated from the configured size and overlap.
+Ingestion validates that the source exists, is non-empty UTF-8, and contains the expected agriculture vocabulary. It preserves Devanagari, creates sentence-preserving overlapping chunks, embeds with BAAI/bge-m3, rebuilds the `hindi_document` collection under `chroma_db`, and verifies the final count. The chunk count is calculated from the configured size and overlap.
 
 ## Design decisions
 
@@ -85,6 +85,18 @@ queries. Document and query vectors are normalized before cosine search.
 streamlit run app.py
 ```
 
+For Render, run ingestion during the build phase so the web process only opens
+the existing ChromaDB index:
+
+```text
+Build Command: pip install -r requirements.txt && python ingest.py
+Start Command: streamlit run app.py --server.address 0.0.0.0 --server.port $PORT
+```
+
+Set `EMBEDDING_MODEL=BAAI/bge-m3` and the OpenRouter variables in Render. Re-run
+the build whenever `EMBEDDING_MODEL` changes so
+the ChromaDB collection is rebuilt with matching vectors.
+
 The UI reports document, embedding, vector-store, and provider status. It shows answers, similarity scores, source sections, chunk IDs, metadata, and expandable retrieved text without exposing secrets. An empty knowledge base gives a clear instruction to run ingestion.
 
 ## Retrieval
@@ -107,8 +119,8 @@ What type of soil is suitable for wheat?
 गेहूं के लिए suitable soil कौन सी है?
 ```
 
-Answers are generated in English using only retrieved context. If the document
-does not contain sufficient information, it returns:
+Answers follow the question-language behavior using only retrieved context. If
+the document does not contain sufficient information, it returns:
 
 ```text
 The provided document does not contain sufficient information to answer this question.
@@ -155,7 +167,7 @@ tests/                            # deterministic pytest suite
 
 ## Limitations
 
-Similarity thresholds need calibration on a larger labeled corpus. Local BGE-M3 inference can be slow on a cold start. Generated-answer correctness and groundedness require human or optional external evaluation. The current app indexes one local document and has no document access-control layer.
+Similarity thresholds need calibration on a larger labeled corpus. Local embedding inference can be slow on a cold start. Generated-answer correctness and groundedness require human or optional external evaluation. The current app indexes one local document and has no document access-control layer.
 
 With more time, the project could add a larger labeled evaluation set,
 reranking for larger collections, document versioning, and automated answer

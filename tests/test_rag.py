@@ -16,7 +16,7 @@ class FakeLLM:
     def generate(self, prompt):
         self.calls += 1
         assert "Question" in prompt
-        assert "Answer in Hindi" in prompt
+        assert "language required" in prompt
         return "सतत कृषि उत्पादन और संरक्षण के बीच संतुलन बनाती है।"
 
 

@@ -45,6 +45,12 @@ def load_chunks(settings: Settings, source_path: Path) -> list[Chunk]:
 
 
 def _has_valid_index(store: Any, chunks: list[Chunk]) -> bool:
+    collection_metadata = getattr(store.collection, "metadata", None)
+    if collection_metadata is not None and collection_metadata.get(
+        "embedding_model"
+    ) != store.embedding_model.model_name:
+        return False
+
     expected_ids = {chunk.chunk_id for chunk in chunks}
     if store.count() != len(expected_ids):
         return False
@@ -74,10 +80,10 @@ def ensure_index(
 
     if _has_valid_index(store, chunks):
         document_count = store.count()
-        logger.info("Index found with %d documents", document_count)
+        logger.info("Using existing index with %d chunks", document_count)
         return document_count
 
-    logger.info("No index found. Building index from Hindi document...")
+    logger.info("Building ChromaDB index...")
     store.rebuild_collection()
     store.upsert_chunks(chunks)
     document_count = store.count()
@@ -85,5 +91,5 @@ def ensure_index(
         raise RuntimeError(
             f"Expected {len(chunks)} Chroma documents, found {document_count}."
         )
-    logger.info("Indexed %d chunks successfully.", document_count)
+    logger.info("Index built successfully: %d chunks", document_count)
     return document_count

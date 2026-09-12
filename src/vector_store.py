@@ -23,19 +23,35 @@ class ChromaVectorStore:
         self.client = chromadb.PersistentClient(path=str(persist_directory))
         self.collection_name = collection_name
         self.collection = self.client.get_or_create_collection(
-            name=collection_name, metadata={"hnsw:space": "cosine"}
+            name=collection_name,
+            metadata={
+                "hnsw:space": "cosine",
+                "embedding_model": embedding_model.model_name,
+            },
         )
 
     def _refresh_collection(self) -> None:
         """Refresh the handle after another process rebuilds the collection."""
         self.collection = self.client.get_or_create_collection(
-            name=self.collection_name, metadata={"hnsw:space": "cosine"}
+            name=self.collection_name,
+            metadata={
+                "hnsw:space": "cosine",
+                "embedding_model": self.embedding_model.model_name,
+            },
         )
 
     def count(self) -> int:
         """Return the current count, even after an external rebuild."""
         self._refresh_collection()
         return self.collection.count()
+
+    def has_compatible_embedding_model(self) -> bool:
+        """Return whether the collection was built with this model."""
+        self._refresh_collection()
+        return (
+            self.collection.metadata.get("embedding_model")
+            == self.embedding_model.model_name
+        )
 
     def upsert_chunks(self, chunks: list[Chunk]) -> None:
         if not chunks:
@@ -55,7 +71,10 @@ class ChromaVectorStore:
         self.client.delete_collection(self.collection_name)
         self.collection = self.client.create_collection(
             name=self.collection_name,
-            metadata={"hnsw:space": "cosine"},
+            metadata={
+                "hnsw:space": "cosine",
+                "embedding_model": self.embedding_model.model_name,
+            },
         )
 
     def search(

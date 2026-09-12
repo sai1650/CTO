@@ -1,8 +1,11 @@
 from src.config import Settings
 
 
-def test_retrieval_and_chunk_defaults():
-    settings = Settings()
+def test_retrieval_and_chunk_defaults(monkeypatch):
+    monkeypatch.delenv("TOP_K", raising=False)
+    monkeypatch.delenv("EMBEDDING_MODEL", raising=False)
+    monkeypatch.delenv("RELEVANCE_THRESHOLD", raising=False)
+    settings = Settings(_env_file=None)
     assert settings.embedding_model == "BAAI/bge-m3"
     assert settings.llm_provider == "openrouter"
     assert settings.llm_model == "openrouter/free"

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: hindirag
+    env: python
+    buildCommand: pip install -r requirements.txt && python ingest.py
+    startCommand: streamlit run app.py --server.address 0.0.0.0 --server.port $PORT
+    envVars:
+      - key: EMBEDDING_MODEL
+        value: BAAI/bge-m3
+      - key: LLM_PROVIDER
+        value: openrouter
+      - key: LLM_MODEL
+        value: openrouter/free
+      - key: OPENROUTER_API_KEY
+        sync: false
