@@ -59,7 +59,7 @@ def test_openrouter_primary_model_success(monkeypatch):
     ]
 
 
-def test_openrouter_primary_429_uses_fallback_message(monkeypatch):
+def test_openrouter_429_returns_temporary_service_message(monkeypatch):
     class FakeError(Exception):
         status_code = 429
 
@@ -92,7 +92,7 @@ def test_openrouter_primary_429_uses_fallback_message(monkeypatch):
     llm = build_llm(settings)
     with pytest.raises(
         LLMProviderUnavailableError,
-        match="rate-limited|fallback model will be tried automatically",
+        match="temporarily rate-limited",
     ):
         llm.generate("भारत में कृषि का महत्व क्या है?")
 
@@ -155,7 +155,7 @@ def test_openrouter_all_models_fail(monkeypatch):
     llm = build_llm(settings)
     with pytest.raises(
         LLMProviderUnavailableError,
-        match="All configured free LLM providers are currently unavailable",
+        match="OpenRouter is temporarily rate-limited",
     ):
         llm.generate("भारत में कृषि का महत्व क्या है?")
 

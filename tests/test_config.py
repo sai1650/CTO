@@ -14,6 +14,7 @@ def test_retrieval_and_chunk_defaults(monkeypatch):
     assert settings.embedding_model == "BAAI/bge-m3"
     assert settings.llm_provider == "openrouter"
     assert settings.llm_model == "openrouter/free"
+    assert "google/gemma-3-27b-it:free" in settings.openrouter_fallback_models
     assert settings.top_k == 4
     assert settings.relevance_threshold == 0.25
     assert settings.chunk_size == 400

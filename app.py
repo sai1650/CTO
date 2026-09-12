@@ -14,7 +14,7 @@ from src.retriever import Retriever
 from src.vector_store import ChromaVectorStore
 
 logger = logging.getLogger(__name__)
-logger.info("Starting application...")
+logger.info("Starting HindiRAG application...")
 
 SAMPLE_QUESTIONS = [
     ("Wheat soil", "गेहूं की खेती के लिए कौन सी मिट्टी उपयुक्त है?"),
@@ -324,6 +324,7 @@ st.markdown(
 )
 
 settings = get_settings()
+logger.info("Connecting to ChromaDB...")
 logger.info("Checking ChromaDB index...")
 store = load_store(
     str(settings.chroma_persist_directory),
@@ -346,6 +347,7 @@ else:
         "ChromaDB index is empty at %s; run python ingest.py",
         store.persist_directory,
     )
+logger.info("Streamlit application ready.")
 
 with st.sidebar:
     st.markdown("### About HindiRAG")
@@ -449,9 +451,16 @@ if ask:
     else:
         with st.spinner("Searching the document and preparing your answer..."):
             try:
-                response = build_pipeline().ask(question.strip())
+                question_text = question.strip()
+                logger.info(
+                    "RAG query started: question_length=%d",
+                    len(question_text),
+                )
+                response = build_pipeline().ask(question_text)
                 logger.info("Retrieved chunks: %d", len(response.sources))
+                logger.info("RAG query completed")
             except LLMError:
+                logger.exception("LLM generation failed during RAG query")
                 st.error(
                     "Something went wrong while processing your question."
                 )
@@ -462,6 +471,7 @@ if ask:
                     )
                 st.stop()
             except Exception:
+                logger.exception("RAG query failed unexpectedly")
                 st.error(
                     "Something went wrong while processing your question."
                 )

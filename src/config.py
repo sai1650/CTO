@@ -8,6 +8,11 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_OPENROUTER_FALLBACK_MODELS = (
+    "google/gemma-3-27b-it:free,"
+    "deepseek/deepseek-r1-0528:free,"
+    "meta-llama/llama-3.3-70b-instruct:free"
+)
 load_dotenv(PROJECT_ROOT / ".env")
 
 
@@ -56,7 +61,8 @@ class Settings(BaseSettings):
         default="https://openrouter.ai/api/v1", alias="OPENROUTER_BASE_URL"
     )
     openrouter_fallback_models: str = Field(
-        default="", alias="OPENROUTER_FALLBACK_MODELS"
+        default=DEFAULT_OPENROUTER_FALLBACK_MODELS,
+        alias="OPENROUTER_FALLBACK_MODELS",
     )
 
 

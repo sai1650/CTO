@@ -260,14 +260,9 @@ class OpenRouterLLM(OpenAICompatibleLLM):
                     "The configured OpenRouter model was not found."
                 ) from error
             if status_code == 429:
-                if self.fallback_models:
-                    raise LLMProviderUnavailableError(
-                        "The selected free LLM is temporarily rate-limited. "
-                        "A fallback model will be tried automatically."
-                    ) from error
                 raise LLMProviderUnavailableError(
-                    "All configured free LLM providers are currently "
-                    "unavailable. Please try again shortly."
+                    "OpenRouter is temporarily rate-limited. Please try "
+                    "again shortly."
                 ) from error
             timeout_text = str(error).lower()
             if "timed out" in timeout_text or "timeout" in timeout_text:
